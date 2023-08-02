@@ -7,69 +7,46 @@ using UnityEngine.UI;
 
 public class SudokuGenerator : MonoBehaviour
 {
-    public int[] shuffle = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    public int[,] puzzle ={
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
+    private const int boardSize = 9;
+    private const int subgridSize = 3;
+    private int[,] sudokuPuzzle;
+    private int[,] sudokuAnswer;
 
-    public int[,] answer ={
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
+    public int hideCount;
 
     public GameObject myCanvas;
     public GameObject theGrid;
     public List<GameObject> gridSlot;
     public List<GameObject> numButtons;
 
-    public GameObject selectedButton;
-    public int selectedY, selectedX;
+    private GameObject selectedButton;
+    private int selectedY, selectedX;
 
     void Start()
     {
-        GameCreate();
-    }
-
-    void GameCreate()
-    {
         CanvasCreate();
-        if (MakeSudoku(0, 0))
-        {
-            //HideNums();
-            FillTable();
-        }
+        GenerateSudoku();
+        HideNums(hideCount);
+        FillTable();
     }
 
-    void HideNums()
+    void HideNums(int hideCount)
     {
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < hideCount; i++)
         {
             int y = Random.Range(0, 9);
             int x = Random.Range(0, 9);
-            if (puzzle[y, x] != 0)
+            if (sudokuPuzzle[y, x] != 0)
             {
-                puzzle[y, x] = 0;
+                sudokuPuzzle[y, x] = 0;
             }
             else
             {
                 y = Random.Range(0, 9);
                 x = Random.Range(0, 9);
-                if (puzzle[y, x] != 0)
+                if (sudokuPuzzle[y, x] != 0)
                 {
-                    puzzle[y, x] = 0;
+                    sudokuPuzzle[y, x] = 0;
                 }
             }
         }
@@ -82,9 +59,9 @@ public class SudokuGenerator : MonoBehaviour
         {
             for (int x = 0; x < 9; x++)
             {
-                if (puzzle[y, x] != 0)
+                if (sudokuPuzzle[y, x] != 0)
                 {
-                    gridSlot[thisCounter].GetComponentInChildren<Text>().text = puzzle[y, x].ToString();
+                    gridSlot[thisCounter].GetComponentInChildren<Text>().text = sudokuPuzzle[y, x].ToString();
                 }
                 else
                 {
@@ -95,6 +72,7 @@ public class SudokuGenerator : MonoBehaviour
         }
     }
 
+    #region UIcanvas
     void CanvasCreate()
     {
         myCanvas = new GameObject("Canvas");
@@ -198,99 +176,175 @@ public class SudokuGenerator : MonoBehaviour
             }
         }
     }
-
-    void Update()
-    {
-        
-    }
+    #endregion
 
     public void SlotSelect(int buttonID)
     {
         selectedX = buttonID - (buttonID / 9 * 9);
         selectedY = buttonID / 9;
 
-        if (puzzle[selectedY, selectedX] == 0)
+        Debug.Log("Button ID: " + buttonID + " -Puzzle : " + sudokuPuzzle[selectedY, selectedX] + " -Answer :" + sudokuAnswer[selectedY, selectedX]);
+
+        if (sudokuPuzzle[selectedY, selectedX] == 0)
         {
             selectedButton = gridSlot[buttonID];
+
             for (int i = 0; i < gridSlot.Count; i++)
             {
-                gridSlot[i].GetComponent<Image>().color = Color.white;
+                if (gridSlot[i].GetComponentInChildren<Text>().text == "")
+                    gridSlot[i].GetComponent<Image>().color = Color.white;
             }
-            selectedButton.GetComponent<Image>().color = Color.grey;
+            if (selectedButton.GetComponentInChildren<Text>().text == "")
+                selectedButton.GetComponent<Image>().color = Color.grey;
+
         }
     }
 
     public void OnButtonDown(int buttonID)
     {
-        Debug.Log("Button : " + buttonID +"---"+ answer[selectedY,selectedX] + "---" + puzzle[selectedY,selectedX]);
-
-        if (puzzle[selectedY,selectedX] == 0 && buttonID + 1 == answer[selectedY, selectedX])
+        Debug.Log("Button ID: " + buttonID + " -Puzzle : " + sudokuPuzzle[selectedY, selectedX] + " -Answer :" + sudokuAnswer[selectedY, selectedX]);
+        if (sudokuPuzzle[selectedY, selectedX] == 0 && buttonID + 1 == sudokuAnswer[selectedY, selectedX])
         {
-            Debug.Log("True");
-            selectedButton.GetComponentInChildren<Text>().text = answer[selectedY, selectedX].ToString();
+            Debug.Log("Answer is True!");
+            selectedButton.GetComponentInChildren<Text>().text = sudokuAnswer[selectedY, selectedX].ToString();
             selectedButton.GetComponent<Image>().color = Color.green;
         }
+        else
+        {
+            Debug.Log("Answer is False!" + "Answer is = " + sudokuAnswer[selectedY, selectedX].ToString());
+            selectedButton.GetComponent<Image>().color = Color.red;
+        }
     }
 
-    public bool MakeSudoku(int y, int x)
+    #region SudokuCreate
+
+    private void GenerateSudoku()
     {
-        shuffle = shuffle.OrderBy(item => Random.Range(0, 9)).ToArray();
-        for (int i = 0; i < 9; i++)
+        sudokuPuzzle = new int[boardSize, boardSize];
+        sudokuAnswer = new int[boardSize, boardSize];
+
+        FillDiagonalSubgrids();
+
+        if (SolveSudoku(0, 0))
         {
-            puzzle[0, i] = shuffle[i];
-            answer[0, i] = shuffle[i];
+            Debug.Log("Sudoku board successfully generated!");
         }
-        shuffle = shuffle.OrderBy(item => Random.Range(0, 9)).ToArray();
-
-        if (y < 9 && x < 9)
+        else
         {
-            if (puzzle[y, x] != 0)
-            {
-                if ((x + 1) < 9) return MakeSudoku(y, x + 1);
-                else if ((y + 1) < 9) return MakeSudoku(y + 1, 0);
-                else return true;
-            }
-            else
-            {
-                for (int i = 0; i < 9; ++i)
-                {
-                    if (IsOk(puzzle, y, x, shuffle[i]))
-                    {
-                        puzzle[y, x] = shuffle[i];
-                        answer[y, x] = shuffle[i];
-
-                        if ((x + 1) < 9)
-                        {
-                            if (MakeSudoku(y, x + 1)) return true;
-                            else puzzle[y, x] = 0;
-                        }
-                        else if ((y + 1) < 9)
-                        {
-                            if (MakeSudoku(y + 1, 0)) return true;
-                            else puzzle[y, x] = 0;
-                        }
-                        else return true;
-                    }
-                }
-            }
-
-            return false;
+            Debug.LogError("Failed to generate a Sudoku board.");
         }
-        else return true;
     }
 
-    bool IsOk(int[,] puzzle, int y, int x, int num)
+    private bool SolveSudoku(int row, int col)
     {
-        int rowStart = (y / 3) * 3;
-        int colStart = (x / 3) * 3;
-
-        for (int i = 0; i < 9; ++i)
+        if (row == boardSize)
         {
-            if (puzzle[y, i] == num) return false;
-            if (puzzle[i, x] == num) return false;
-            if (puzzle[rowStart + (i % 3), colStart + (i / 3)] == num) return false;
+            row = 0;
+            if (++col == boardSize)
+                return true;
         }
 
-        return true;
+        if (sudokuPuzzle[row, col] != 0)
+            return SolveSudoku(row + 1, col);
+
+        for (int num = 1; num <= boardSize; num++)
+        {
+            if (IsValidPlacement(row, col, num))
+            {
+                sudokuPuzzle[row, col] = num;
+                sudokuAnswer[row, col] = num;
+
+                if (SolveSudoku(row + 1, col))
+                    return true;
+
+                sudokuPuzzle[row, col] = 0;
+                sudokuAnswer[row, col] = 0;
+            }
+        }
+
+        return false;
     }
+
+    private bool IsValidPlacement(int row, int col, int num)
+    {
+        return !IsInRow(row, num) && !IsInColumn(col, num) && !IsInSubgrid(row - row % subgridSize, col - col % subgridSize, num);
+    }
+
+    private bool IsInRow(int row, int num)
+    {
+        for (int col = 0; col < boardSize; col++)
+        {
+            if (sudokuPuzzle[row, col] == num)
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool IsInColumn(int col, int num)
+    {
+        for (int row = 0; row < boardSize; row++)
+        {
+            if (sudokuPuzzle[row, col] == num)
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool IsInSubgrid(int startRow, int startCol, int num)
+    {
+        for (int row = 0; row < subgridSize; row++)
+        {
+            for (int col = 0; col < subgridSize; col++)
+            {
+                if (sudokuPuzzle[row + startRow, col + startCol] == num)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void FillDiagonalSubgrids()
+    {
+        for (int row = 0; row < boardSize; row += subgridSize)
+        {
+            FillSubgrid(row, row);
+        }
+    }
+
+    private void FillSubgrid(int row, int col)
+    {
+        int[] numbers = GetShuffledNumbers();
+
+        for (int i = 0; i < subgridSize; i++)
+        {
+            for (int j = 0; j < subgridSize; j++)
+            {
+                sudokuPuzzle[row + i, col + j] = numbers[i * subgridSize + j];
+                sudokuAnswer[row + i, col + j] = numbers[i * subgridSize + j];
+            }
+        }
+    }
+
+    private int[] GetShuffledNumbers()
+    {
+        int[] numbers = new int[boardSize];
+        for (int i = 0; i < boardSize; i++)
+        {
+            numbers[i] = i + 1;
+        }
+
+        for (int i = 0; i < boardSize - 1; i++)
+        {
+            int randIndex = UnityEngine.Random.Range(i, boardSize);
+            int temp = numbers[i];
+            numbers[i] = numbers[randIndex];
+            numbers[randIndex] = temp;
+        }
+
+        return numbers;
+    }
+    #endregion
 }
